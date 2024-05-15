@@ -1,0 +1,31 @@
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/foolin/goview/supports/ginview"
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	"__moduleName__/auth"
+	"__moduleName__/database"
+  __modelsImport__
+)
+
+func init() {
+	viper.SetConfigFile(".local.env")
+	viper.ReadInConfig()
+	database.InitDB()
+}
+
+func main() {
+	r := gin.Default()
+	api := r.Group("api/")
+	auth.RegisterHandlers(api)
+	user.RegisterHandlers(api)
+	chat.RegisterHandlers(api)
+	chat_room.RegisterHandlers(api)
+	room_tag.RegisterHandlers(api)
+	err := r.Run()
+	log.Fatal(err)
+}
