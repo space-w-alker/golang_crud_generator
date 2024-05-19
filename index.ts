@@ -81,7 +81,7 @@ async function renderModel(m: Model, moduleName: string): Promise<string> {
     m.properties
       .filter((p) => p.type === "field")
       .map((f) => renderField(f as Field))
-      .join("\n"),
+      .join("\n\t"),
   );
 
   await writeFile(filePath, template, { encoding: "utf8" });
@@ -154,14 +154,14 @@ async function renderAuth(moduleName: string) {
 
 function renderField(f: Field): string {
   const s = camelToSnake(f.name);
-  return `${f.name} ${tMap[f.fieldType as string] ?? f.fieldType} ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
+  return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${tMap[f.fieldType as string] ?? `${camelToSnake(f.fieldType as string)}.${f.fieldType}`} ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
 }
 
 const tMap: Record<string, string> = {
-  Int: "*int",
-  String: "*string",
-  DateTime: "*time.Time",
-  Boolean: "*bool",
+  Int: "int",
+  String: "string",
+  DateTime: "time.Time",
+  Boolean: "bool",
 };
 
 function camelToSnake(s: string) {

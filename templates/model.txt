@@ -18,7 +18,7 @@ type __upperModelName__List []__upperModelName__
 
 func Create(db *goqu.Database, m *__upperModelName__) (string, error) {
 	id := uuid.New().String()
-	mp := map[string]interface{}{}
+	mp := map[string]any{}
 	m.Id = &id
 	generic.ToJsMap(*m, mp)
 	_, e := db.Insert("__upperModelName__").Rows(mp).Executor().Exec()
@@ -26,7 +26,7 @@ func Create(db *goqu.Database, m *__upperModelName__) (string, error) {
 }
 
 func Update(db *goqu.Database, id *string, m *__upperModelName__) error {
-	mp := map[string]interface{}{}
+	mp := map[string]any{}
 	generic.ToJsMap(*m, mp)
 	_, e := db.Update("__upperModelName__").Set(mp).Where(goqu.Ex{"id": id}).Executor().Exec()
 	return e

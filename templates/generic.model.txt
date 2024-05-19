@@ -18,7 +18,7 @@ type PaginationMeta struct {
 	TotalItems uint `json:"totalItems" form:"totalItems" binding:"omitempty,number,gt=0"`
 }
 
-func ToJsMap(s interface{}, out map[string]interface{}) {
+func ToJsMap(s any, out map[string]any) {
 	_m := structs.Map(s)
 	for _, field := range structs.Fields(s) {
 		v := _m[field.Name()]
