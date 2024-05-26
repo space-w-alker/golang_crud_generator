@@ -3,7 +3,9 @@ import {
   type Field,
   type Model,
 } from "@mrleebo/prisma-ast";
-import { exists, writeFile, readFile, mkdir } from "fs/promises";
+import { exists, writeFile, readFile, mkdir, rmdir } from "fs/promises";
+import _path from "path";
+import { move } from "fs-extra";
 
 export async function generate() {
   const path = "schema.prisma";
@@ -26,6 +28,7 @@ export async function generate() {
       await renderModel(model, moduleName);
       await renderController(model, moduleName);
     }
+    await moveProject(moduleName);
   }
 }
 
@@ -155,6 +158,18 @@ async function renderAuth(moduleName: string) {
 function renderField(f: Field): string {
   const s = camelToSnake(f.name);
   return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${tMap[f.fieldType as string] ?? `${camelToSnake(f.fieldType as string)}.${f.fieldType}`} ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
+}
+
+async function moveProject(moduleName: string) {
+  const split = moduleName.split("/");
+  const projectName = split[split.length - 1];
+  if (process.env.GOPATH) {
+    await move(
+      projectName,
+      `${_path.join(_path.join(process.env.GOPATH, "src", moduleName))}`,
+      { overwrite: true },
+    );
+  }
 }
 
 const tMap: Record<string, string> = {
