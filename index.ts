@@ -5,7 +5,7 @@ import {
 } from "@mrleebo/prisma-ast";
 import { exists, writeFile, readFile, mkdir, rmdir } from "fs/promises";
 import _path from "path";
-import { move, readdir, ensureDirSync, stat, ensureDir } from "fs-extra";
+import { move, readdir, stat, ensureDir } from "fs-extra";
 
 export async function generate() {
   const path = "schema.prisma";
