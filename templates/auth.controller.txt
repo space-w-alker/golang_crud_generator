@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"__moduleName__/modules/user"
 	"__moduleName__/model"
 )
 

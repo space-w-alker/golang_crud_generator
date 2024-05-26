@@ -5,13 +5,13 @@ import {
 } from "@mrleebo/prisma-ast";
 import { exists, writeFile, readFile, mkdir, rmdir } from "fs/promises";
 import _path from "path";
-import { move } from "fs-extra";
+import { move, readdir, ensureDirSync, stat, ensureDir } from "fs-extra";
 
 export async function generate() {
   const path = "schema.prisma";
   if (await exists(path)) {
     const builder = createPrismaSchemaBuilder(
-      await readFile(path, { encoding: "utf8" }),
+      await readFile(path, { encoding: "utf8" })
     );
 
     const moduleName = process.argv[2];
@@ -35,11 +35,11 @@ export async function generate() {
 
 async function renderMain(
   models: Model[],
-  moduleName: string,
+  moduleName: string
 ): Promise<string> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
-  mkdir(`${projectName}`, { recursive: true });
+  await mkdir(`${projectName}`, { recursive: true });
   let template = await readFile("templates/main.go.txt", { encoding: "utf8" });
   const filePath = `${projectName}/main.go`;
   template = template.replaceAll("__moduleName__", moduleName);
@@ -47,13 +47,13 @@ async function renderMain(
     "__modulesImport__",
     models
       .map((v) => `"${moduleName}/modules/${camelToSnake(v.name)}"`)
-      .join("\n\t"),
+      .join("\n\t")
   );
   template = template.replaceAll(
     "__register__",
     models
       .map((v) => `${camelToSnake(v.name)}.RegisterHandlers(api)`)
-      .join("\n\t"),
+      .join("\n\t")
   );
   await writeFile(filePath, template, { encoding: "utf8" });
   return template;
@@ -63,7 +63,7 @@ async function renderController(m: Model, moduleName: string): Promise<string> {
   const s = camelToSnake(m.name);
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
-  mkdir(`${projectName}/modules/${s}`, { recursive: true });
+  await mkdir(`${projectName}/modules/${s}`, { recursive: true });
   let template = await readFile("templates/controller.txt", {
     encoding: "utf8",
   });
@@ -79,7 +79,7 @@ async function renderModule(m: Model, moduleName: string): Promise<string> {
   const s = camelToSnake(m.name);
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
-  mkdir(`${projectName}/modules/${s}`, { recursive: true });
+  await mkdir(`${projectName}/modules/${s}`, { recursive: true });
   let template = await readFile("templates/base_service.txt", {
     encoding: "utf8",
   });
@@ -98,7 +98,7 @@ async function renderModel(m: Model, moduleName: string): Promise<string> {
   const s = camelToSnake(m.name);
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
-  mkdir(`${projectName}/model`, { recursive: true });
+  await mkdir(`${projectName}/model`, { recursive: true });
   let template = await readFile("templates/model.txt", {
     encoding: "utf8",
   });
@@ -110,7 +110,7 @@ async function renderModel(m: Model, moduleName: string): Promise<string> {
     m.properties
       .filter((p) => p.type === "field")
       .map((f) => renderField(f as Field))
-      .join("\n\t"),
+      .join("\n\t")
   );
 
   await writeFile(filePath, template, { encoding: "utf8" });
@@ -171,17 +171,19 @@ async function renderAuth(moduleName: string) {
 
 function renderField(f: Field): string {
   const s = camelToSnake(f.name);
-  return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${tMap[f.fieldType as string] ?? f.fieldType} ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
+  return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${
+    tMap[f.fieldType as string] ?? f.fieldType
+  } ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
 }
 
 async function moveProject(moduleName: string) {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
+  console.log(process.env.GOPATH);
   if (process.env.GOPATH) {
-    await move(
-      projectName,
-      `${_path.join(_path.join(process.env.GOPATH, "src", moduleName))}`,
-      { overwrite: true },
+    _move(
+      _path.join(projectName),
+      _path.join(process.env.GOPATH ?? "", "src", moduleName)
     );
   }
 }
@@ -197,6 +199,20 @@ function camelToSnake(s: string) {
   return s
     .replace(/[A-Z]/g, (match) => "_" + match.toLowerCase())
     .replace(/^_/, "");
+}
+
+async function _move(source: string, dest: string) {
+  if ((await stat(source)).isDirectory()) {
+    const items = await readdir(source);
+    await Promise.all(
+      items.map((item) =>
+        _move(_path.join(source, item), _path.join(dest, item))
+      )
+    );
+  } else {
+    await ensureDir(_path.dirname(dest));
+    await move(source, dest, { overwrite: true });
+  }
 }
 
 generate();
