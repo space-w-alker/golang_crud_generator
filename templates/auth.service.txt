@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"__moduleName__/database"
-	"__moduleName__/model/generic"
-	"__moduleName__/model/user"
+	"__moduleName__/modules/user"
+	"__moduleName__/model"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,7 +21,7 @@ type SignInDTO struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6,max=50"`
 }
-func SignUp(dto *user.User) (jwtToken string, err error) {
+func SignUp(dto *model.User) (jwtToken string, err error) {
 	pass, err := HashPassword(*dto.Password)
 	if err != nil {
 		return "", err
@@ -31,7 +31,7 @@ func SignUp(dto *user.User) (jwtToken string, err error) {
 	if err != nil {
 		return "", err
 	}
-	newUser,_, err := user.GetWhere(database.DB, &user.User{Email: dto.Email}, &generic.PaginationArgs{})
+	newUser,_, err := user.GetWhere(database.DB, &model.User{Email: dto.Email}, &model.PaginationArgs{})
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +40,7 @@ func SignUp(dto *user.User) (jwtToken string, err error) {
 }
 
 func SignIn(email string, password string) (jwtToken string, err error) {
-	u,_, err := user.GetWhere(database.DB, &user.User{Email: &email}, &generic.PaginationArgs{})
+	u,_, err := user.GetWhere(database.DB, &model.User{Email: &email}, &model.PaginationArgs{})
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +98,7 @@ func VerifyJWT(tokenString string) (value string, err error) {
 	}
 }
 
-func GetUserByToken(tokenString string) (u *user.User, err error)  {
+func GetUserByToken(tokenString string) (u *model.User, err error)  {
 	uid, err := VerifyJWT(tokenString)
 	if err != nil {
 		return u, err

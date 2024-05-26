@@ -1,0 +1,55 @@
+package __lowerModelName__
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/space-w-alker/new_chat/model"
+
+	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
+)
+
+func Create(db *goqu.Database, m *model.__upperModelName__) (string, error) {
+	id := uuid.New().String()
+	mp := map[string]any{}
+	m.Id = &id
+	model.ToJsMap(*m, mp)
+	_, e := db.Insert("__upperModelName__").Rows(mp).Executor().Exec()
+	return id, e
+}
+
+func Update(db *goqu.Database, id *string, m *model.__upperModelName__) error {
+	mp := map[string]any{}
+	model.ToJsMap(*m, mp)
+	_, e := db.Update("__upperModelName__").Set(mp).Where(goqu.Ex{"id": id}).Executor().Exec()
+	return e
+}
+
+func GetById(db *goqu.Database, id *string) (m *model.__upperModelName__, e error) {
+	m = &model.__upperModelName__{}
+	_, e = db.From("__upperModelName__").Where(goqu.Ex{"id": *id}).ScanStruct(m)
+	return m, e
+}
+
+func GetWhere(db *goqu.Database, getArgs *model.__upperModelName__, opts *model.PaginationArgs) (mList model.__upperModelName__List, meta model.PaginationMeta, e error) {
+	where := goqu.Ex{}
+	model.ToJsMap(getArgs, where)
+	offset := (opts.Page - 1) * opts.Limit
+	query := db.From("__upperModelName__").Order(goqu.C("createdAt").Desc().NullsLast()).Offset(offset).Limit(opts.Limit).Where(where)
+	countQuery := db.From("__upperModelName__").Where(where)
+	if err := query.ScanStructs(&mList); err != nil {
+		return nil, meta, err
+	}
+	total, err := countQuery.Count()
+	if err != nil {
+		return nil, meta, err
+	}
+	meta = model.PaginationMeta{TotalItems: uint(total), Page: opts.Page, Limit: opts.Limit}
+	return mList, meta, nil
+}
+
+func Delete(db *goqu.Database, id *string) error {
+	_,e := db.Delete("__upperModelName__").Where(goqu.Ex{"id":id}).Executor().Exec()
+	return e
+}

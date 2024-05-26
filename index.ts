@@ -26,6 +26,7 @@ export async function generate() {
     for (let i = 0; i < models.length; i++) {
       const model = models[i];
       await renderModel(model, moduleName);
+      await renderModule(model, moduleName);
       await renderController(model, moduleName);
     }
     await moveProject(moduleName);
@@ -43,9 +44,15 @@ async function renderMain(
   const filePath = `${projectName}/main.go`;
   template = template.replaceAll("__moduleName__", moduleName);
   template = template.replaceAll(
-    "__modelsImport__",
+    "__modulesImport__",
     models
-      .map((v) => `"${moduleName}/model/${camelToSnake(v.name)}"`)
+      .map((v) => `"${moduleName}/modules/${camelToSnake(v.name)}"`)
+      .join("\n\t"),
+  );
+  template = template.replaceAll(
+    "__register__",
+    models
+      .map((v) => `${camelToSnake(v.name)}.RegisterHandlers(api)`)
       .join("\n\t"),
   );
   await writeFile(filePath, template, { encoding: "utf8" });
@@ -56,11 +63,11 @@ async function renderController(m: Model, moduleName: string): Promise<string> {
   const s = camelToSnake(m.name);
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
-  mkdir(`${projectName}/model/${s}`, { recursive: true });
+  mkdir(`${projectName}/modules/${s}`, { recursive: true });
   let template = await readFile("templates/controller.txt", {
     encoding: "utf8",
   });
-  const filePath = `${projectName}/model/${s}/${s}.controller.go`;
+  const filePath = `${projectName}/modules/${s}/${s}.controller.go`;
   template = template.replaceAll("__moduleName__", moduleName);
   template = template.replaceAll("__lowerModelName__", s);
   template = template.replaceAll("__upperModelName__", m.name);
@@ -68,16 +75,35 @@ async function renderController(m: Model, moduleName: string): Promise<string> {
   return template;
 }
 
+async function renderModule(m: Model, moduleName: string): Promise<string> {
+  const s = camelToSnake(m.name);
+  const split = moduleName.split("/");
+  const projectName = split[split.length - 1];
+  mkdir(`${projectName}/modules/${s}`, { recursive: true });
+  let template = await readFile("templates/base_service.txt", {
+    encoding: "utf8",
+  });
+  const filePath = `${projectName}/modules/${s}/${s}.base_service.go`;
+
+  template = template.replaceAll("__moduleName__", moduleName);
+  template = template.replaceAll("__lowerModelName__", s);
+  template = template.replaceAll("__upperModelName__", m.name);
+
+  await writeFile(filePath, template, { encoding: "utf8" });
+
+  return template;
+}
+
 async function renderModel(m: Model, moduleName: string): Promise<string> {
   const s = camelToSnake(m.name);
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
-  mkdir(`${projectName}/model/${s}`, { recursive: true });
-  let template = await readFile("templates/model.txt", { encoding: "utf8" });
-  const filePath = `${projectName}/model/${s}/${s}.model.go`;
+  mkdir(`${projectName}/model`, { recursive: true });
+  let template = await readFile("templates/model.txt", {
+    encoding: "utf8",
+  });
+  const filePath = `${projectName}/model/${s}.go`;
 
-  template = template.replaceAll("__moduleName__", moduleName);
-  template = template.replaceAll("__lowerModelName__", s);
   template = template.replaceAll("__upperModelName__", m.name);
   template = template.replaceAll(
     "__fields__",
@@ -115,22 +141,10 @@ async function renderGeneral(moduleName: string): Promise<void> {
   await writeFile(`${projectName}/go.mod`, modTemplate, {
     encoding: "utf8",
   });
-  await mkdir(`${projectName}/model/generic/`, { recursive: true });
-  await writeFile(
-    `${projectName}/model/generic/generic.model.go`,
-    genericTemplate,
-    {
-      encoding: "utf8",
-    },
-  );
-  await mkdir(`${projectName}/auth/`, { recursive: true });
-  await writeFile(
-    `${projectName}/model/generic/generic.model.go`,
-    genericTemplate,
-    {
-      encoding: "utf8",
-    },
-  );
+  await mkdir(`${projectName}/model`, { recursive: true });
+  await writeFile(`${projectName}/model/generic.go`, genericTemplate, {
+    encoding: "utf8",
+  });
 }
 
 async function renderAuth(moduleName: string) {
@@ -157,7 +171,7 @@ async function renderAuth(moduleName: string) {
 
 function renderField(f: Field): string {
   const s = camelToSnake(f.name);
-  return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${tMap[f.fieldType as string] ?? `${camelToSnake(f.fieldType as string)}.${f.fieldType}`} ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
+  return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${tMap[f.fieldType as string] ?? f.fieldType} ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
 }
 
 async function moveProject(moduleName: string) {

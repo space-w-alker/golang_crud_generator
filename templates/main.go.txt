@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 	"__moduleName__/auth"
 	"__moduleName__/database"
-  __modelsImport__
+  __modulesImport__
 )
 
 func init() {
@@ -22,10 +22,7 @@ func main() {
 	r := gin.Default()
 	api := r.Group("api/")
 	auth.RegisterHandlers(api)
-	user.RegisterHandlers(api)
-	chat.RegisterHandlers(api)
-	chat_room.RegisterHandlers(api)
-	room_tag.RegisterHandlers(api)
+  __register__
 	err := r.Run()
 	log.Fatal(err)
 }
