@@ -8,19 +8,15 @@ import (
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 )
 
-func Create(db *goqu.Database, m *model.__upperModelName__) (string, error) {
-	id := uuid.New().String()
-	mp := map[string]any{}
+func Create(db *goqu.Database, m *model.Create__upperModelName__DTO) (string, error) {
+  id := uuid.New().String()
 	m.Id = &id
-	model.ToJsMap(*m, mp)
-	_, e := db.Insert("__upperModelName__").Rows(mp).Executor().Exec()
+	_, e := db.Insert("__upperModelName__").Rows(m).Executor().Exec()
 	return id, e
 }
 
-func Update(db *goqu.Database, id *string, m *model.__upperModelName__) error {
-	mp := map[string]any{}
-	model.ToJsMap(*m, mp)
-	_, e := db.Update("__upperModelName__").Set(mp).Where(goqu.Ex{"id": id}).Executor().Exec()
+func Update(db *goqu.Database, id *string, m *model.Update__upperModelName__DTO) error {
+	_, e := db.Update("__upperModelName__").Set(m).Where(goqu.Ex{"id": id}).Executor().Exec()
 	return e
 }
 
@@ -30,7 +26,7 @@ func GetById(db *goqu.Database, id *string) (m *model.__upperModelName__, e erro
 	return m, e
 }
 
-func GetWhere(db *goqu.Database, getArgs *model.__upperModelName__, opts *model.PaginationArgs) (mList model.__upperModelName__List, meta model.PaginationMeta, e error) {
+func GetWhere(db *goqu.Database, getArgs *model.Find__upperModelName__DTO, opts *model.PaginationArgs) (mList model.__upperModelName__List, meta model.PaginationMeta, e error) {
 	where := goqu.Ex{}
 	model.ToJsMap(getArgs, where)
 	offset := (opts.Page - 1) * opts.Limit
@@ -51,3 +47,4 @@ func Delete(db *goqu.Database, id *string) error {
 	_,e := db.Delete("__upperModelName__").Where(goqu.Ex{"id":id}).Executor().Exec()
 	return e
 }
+

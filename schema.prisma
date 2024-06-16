@@ -4,16 +4,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username  String   @unique()
   email     String   @unique()
   password  String
   chats     Chat[]
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Chat {
-  id         String   @id @default(uuid())
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   text       String
   published  Boolean  @default(true)
   authorId   String
@@ -21,28 +22,32 @@ model Chat {
   chatRoomId String
   chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model ChatRoom {
-  id           String      @id @default(uuid())
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
   chat         Chat[]
   tags         RoomTag[]
-  createdAt    DateTime    @default(now())
   SpecialTag   SpecialTag? @relation(fields: [specialTagId], references: [id])
   specialTagId String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model RoomTag {
-  id        String     @id @default(uuid())
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   chatRooms ChatRoom[]
   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model SpecialTag {
-  id        String     @id @default(uuid())
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   chatRooms ChatRoom[]
   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }

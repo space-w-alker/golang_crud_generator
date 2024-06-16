@@ -1,9 +1,0 @@
-package model
-
-import "time"
-
-type __upperModelName__ struct {
-	__fields__
-}
-
-type __upperModelName__List []__upperModelName__

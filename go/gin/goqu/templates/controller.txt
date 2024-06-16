@@ -12,13 +12,13 @@ func RegisterHandlers(r *gin.RouterGroup) {
 	group := r.Group("/__lowerModelName__")
 	group.POST("", CreateHandler)
 	group.GET("", ReadHandler)
-	group.GET("/:id", ReadOneHandler)
-	group.PATCH("/:id", UpdateHandler)
-	group.DELETE("/:id", DeleteHandler)
+	group.GET("one/:id", ReadOneHandler)
+	group.PATCH("one/:id", UpdateHandler)
+	group.DELETE("one/:id", DeleteHandler)
 }
 
 func CreateHandler(c *gin.Context) {
-	var dto model.__upperModelName__
+	var dto model.Create__upperModelName__DTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -42,7 +42,7 @@ func ReadOneHandler(c *gin.Context) {
 }
 
 func ReadHandler(c *gin.Context) {
-	var dto model.__upperModelName__
+	var dto model.Find__upperModelName__DTO
 	var opts model.PaginationArgs
 	if err := c.ShouldBind(&dto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -62,7 +62,7 @@ func ReadHandler(c *gin.Context) {
 
 func UpdateHandler(c *gin.Context) {
 	id := c.Param("id")
-	var dto model.__upperModelName__
+	var dto model.Update__upperModelName__DTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -21,7 +21,8 @@ type SignInDTO struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6,max=50"`
 }
-func SignUp(dto *model.User) (jwtToken string, err error) {
+
+func SignUp(dto *model.CreateUserDTO) (jwtToken string, err error) {
 	pass, err := HashPassword(*dto.Password)
 	if err != nil {
 		return "", err
@@ -31,7 +32,7 @@ func SignUp(dto *model.User) (jwtToken string, err error) {
 	if err != nil {
 		return "", err
 	}
-	newUser,_, err := user.GetWhere(database.DB, &model.User{Email: dto.Email}, &model.PaginationArgs{})
+	newUser,_, err := user.GetWhere(database.DB, &model.FindUserDTO{Email: dto.Email}, &model.PaginationArgs{})
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +41,7 @@ func SignUp(dto *model.User) (jwtToken string, err error) {
 }
 
 func SignIn(email string, password string) (jwtToken string, err error) {
-	u,_, err := user.GetWhere(database.DB, &model.User{Email: &email}, &model.PaginationArgs{})
+	u,_, err := user.GetWhere(database.DB, &model.FindUserDTO{Email: &email}, &model.PaginationArgs{})
 	if err != nil {
 		return "", err
 	}

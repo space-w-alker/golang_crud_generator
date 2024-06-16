@@ -1,0 +1,25 @@
+package model
+
+import "time"
+
+type __upperModelName__Schema struct {
+	__schemaFields__
+}
+
+type __upperModelName__ struct {
+	__fields__
+}
+
+type Create__upperModelName__DTO struct {
+	__createFields__
+}
+
+type Find__upperModelName__DTO struct {
+	__findFields__
+}
+
+type Update__upperModelName__DTO struct {
+	__updateFields__
+}
+
+type __upperModelName__List []__upperModelName__

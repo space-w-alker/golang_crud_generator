@@ -3,15 +3,22 @@ import {
   type Field,
   type Model,
 } from "@mrleebo/prisma-ast";
-import { exists, writeFile, readFile, mkdir, rmdir } from "fs/promises";
+import { exists, writeFile, readFile, mkdir } from "fs/promises";
 import _path from "path";
 import { move, readdir, stat, ensureDir } from "fs-extra";
+
+enum OpTypeEnum {
+  CREATE,
+  FIND,
+  UPDATE,
+  DELETE,
+}
 
 export async function generate() {
   const path = "schema.prisma";
   if (await exists(path)) {
     const builder = createPrismaSchemaBuilder(
-      await readFile(path, { encoding: "utf8" })
+      await readFile(path, { encoding: "utf8" }),
     );
 
     const moduleName = process.argv[2];
@@ -35,7 +42,7 @@ export async function generate() {
 
 async function renderMain(
   models: Model[],
-  moduleName: string
+  moduleName: string,
 ): Promise<string> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
@@ -47,13 +54,13 @@ async function renderMain(
     "__modulesImport__",
     models
       .map((v) => `"${moduleName}/modules/${camelToSnake(v.name)}"`)
-      .join("\n\t")
+      .join("\n\t"),
   );
   template = template.replaceAll(
     "__register__",
     models
       .map((v) => `${camelToSnake(v.name)}.RegisterHandlers(api)`)
-      .join("\n\t")
+      .join("\n\t"),
   );
   await writeFile(filePath, template, { encoding: "utf8" });
   return template;
@@ -99,18 +106,46 @@ async function renderModel(m: Model, moduleName: string): Promise<string> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
   await mkdir(`${projectName}/model`, { recursive: true });
-  let template = await readFile("templates/model.txt", {
+  let template = await readFile("go/gin/goqu/templates/model.txt", {
     encoding: "utf8",
   });
   const filePath = `${projectName}/model/${s}.go`;
 
   template = template.replaceAll("__upperModelName__", m.name);
   template = template.replaceAll(
-    "__fields__",
+    "__schemaFields__",
     m.properties
       .filter((p) => p.type === "field")
       .map((f) => renderField(f as Field))
-      .join("\n\t")
+      .join("\n\t"),
+  );
+  template = template.replaceAll(
+    "__fields__",
+    m.properties
+      .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
+      .map((f) => renderField(f as Field))
+      .join("\n\t"),
+  );
+  template = template.replaceAll(
+    "__createFields__",
+    m.properties
+      .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
+      .map((f) => renderField(f as Field))
+      .join("\n\t"),
+  );
+  template = template.replaceAll(
+    "__updateFields__",
+    m.properties
+      .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
+      .map((f) => renderField(f as Field))
+      .join("\n\t"),
+  );
+  template = template.replaceAll(
+    "__findFields__",
+    m.properties
+      .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
+      .map((f) => renderField(f as Field))
+      .join("\n\t"),
   );
 
   await writeFile(filePath, template, { encoding: "utf8" });
@@ -173,7 +208,11 @@ function renderField(f: Field): string {
   const s = camelToSnake(f.name);
   return `${f.name[0].toUpperCase() + f.name.slice(1)} ${f.array ? "[]" : ""}*${
     tMap[f.fieldType as string] ?? f.fieldType
-  } ${"`"}json:"${s}" form:"${s}" db:"${s}"${"`"}`;
+  } ${"`"}json:"${s}" form:"${s}" db:"${f.name}"${"`"}`;
+}
+
+function isPrimitive(fieldType: string): boolean {
+  return tMap[fieldType] ? true : false;
 }
 
 async function moveProject(moduleName: string) {
@@ -183,7 +222,7 @@ async function moveProject(moduleName: string) {
   if (process.env.GOPATH) {
     _move(
       _path.join(projectName),
-      _path.join(process.env.GOPATH ?? "", "src", moduleName)
+      _path.join(process.env.GOPATH ?? "", "src", moduleName),
     );
   }
 }
@@ -206,10 +245,11 @@ async function _move(source: string, dest: string) {
     const items = await readdir(source);
     await Promise.all(
       items.map((item) =>
-        _move(_path.join(source, item), _path.join(dest, item))
-      )
+        _move(_path.join(source, item), _path.join(dest, item)),
+      ),
     );
   } else {
+    if (source.match(/go.mod/gi) && (await exists(dest))) return;
     await ensureDir(_path.dirname(dest));
     await move(source, dest, { overwrite: true });
   }
