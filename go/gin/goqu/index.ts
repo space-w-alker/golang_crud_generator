@@ -14,15 +14,12 @@ enum OpTypeEnum {
   DELETE,
 }
 
-export async function generate() {
+export async function generate(moduleName: string, moveFiles: boolean) {
   const path = "schema.prisma";
   if (await exists(path)) {
     const builder = createPrismaSchemaBuilder(
-      await readFile(path, { encoding: "utf8" }),
+      await readFile(path, { encoding: "utf8" })
     );
-
-    const moduleName = process.argv[2];
-
     const models = builder
       .findAllByType("model", {})
       .filter((v) => v) as Model[];
@@ -36,31 +33,35 @@ export async function generate() {
       await renderModule(model, moduleName);
       await renderController(model, moduleName);
     }
-    await moveProject(moduleName);
+    if (moveFiles) {
+      await moveProject(moduleName);
+    }
   }
 }
 
 async function renderMain(
   models: Model[],
-  moduleName: string,
+  moduleName: string
 ): Promise<string> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
   await mkdir(`${projectName}`, { recursive: true });
-  let template = await readFile("templates/main.go.txt", { encoding: "utf8" });
+  let template = await readFile("go/gin/goqu/templates/main.go.txt", {
+    encoding: "utf8",
+  });
   const filePath = `${projectName}/main.go`;
   template = template.replaceAll("__moduleName__", moduleName);
   template = template.replaceAll(
     "__modulesImport__",
     models
       .map((v) => `"${moduleName}/modules/${camelToSnake(v.name)}"`)
-      .join("\n\t"),
+      .join("\n\t")
   );
   template = template.replaceAll(
     "__register__",
     models
       .map((v) => `${camelToSnake(v.name)}.RegisterHandlers(api)`)
-      .join("\n\t"),
+      .join("\n\t")
   );
   await writeFile(filePath, template, { encoding: "utf8" });
   return template;
@@ -71,7 +72,7 @@ async function renderController(m: Model, moduleName: string): Promise<string> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
   await mkdir(`${projectName}/modules/${s}`, { recursive: true });
-  let template = await readFile("templates/controller.txt", {
+  let template = await readFile("go/gin/goqu/templates/controller.txt", {
     encoding: "utf8",
   });
   const filePath = `${projectName}/modules/${s}/${s}.controller.go`;
@@ -87,7 +88,7 @@ async function renderModule(m: Model, moduleName: string): Promise<string> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
   await mkdir(`${projectName}/modules/${s}`, { recursive: true });
-  let template = await readFile("templates/base_service.txt", {
+  let template = await readFile("go/gin/goqu/templates/base_service.txt", {
     encoding: "utf8",
   });
   const filePath = `${projectName}/modules/${s}/${s}.base_service.go`;
@@ -117,35 +118,35 @@ async function renderModel(m: Model, moduleName: string): Promise<string> {
     m.properties
       .filter((p) => p.type === "field")
       .map((f) => renderField(f as Field))
-      .join("\n\t"),
+      .join("\n\t")
   );
   template = template.replaceAll(
     "__fields__",
     m.properties
       .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
       .map((f) => renderField(f as Field))
-      .join("\n\t"),
+      .join("\n\t")
   );
   template = template.replaceAll(
     "__createFields__",
     m.properties
       .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
       .map((f) => renderField(f as Field))
-      .join("\n\t"),
+      .join("\n\t")
   );
   template = template.replaceAll(
     "__updateFields__",
     m.properties
       .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
       .map((f) => renderField(f as Field))
-      .join("\n\t"),
+      .join("\n\t")
   );
   template = template.replaceAll(
     "__findFields__",
     m.properties
       .filter((p) => p.type === "field" && isPrimitive(p.fieldType as string))
       .map((f) => renderField(f as Field))
-      .join("\n\t"),
+      .join("\n\t")
   );
 
   await writeFile(filePath, template, { encoding: "utf8" });
@@ -157,14 +158,20 @@ async function renderGeneral(moduleName: string): Promise<void> {
   const split = moduleName.split("/");
   const projectName = split[split.length - 1];
   await mkdir(`${projectName}`, { recursive: true });
-  const databaseTemplate = await readFile("templates/database.txt", {
-    encoding: "utf8",
-  });
-  const genericTemplate = await readFile("templates/generic.model.txt", {
-    encoding: "utf8",
-  });
+  const databaseTemplate = await readFile(
+    "go/gin/goqu/templates/database.txt",
+    {
+      encoding: "utf8",
+    }
+  );
+  const genericTemplate = await readFile(
+    "go/gin/goqu/templates/generic.model.txt",
+    {
+      encoding: "utf8",
+    }
+  );
   const modTemplate = (
-    await readFile("templates/go.mod.txt", {
+    await readFile("go/gin/goqu/templates/go.mod.txt", {
       encoding: "utf8",
     })
   ).replace(/__moduleName__/, moduleName);
@@ -187,12 +194,12 @@ async function renderAuth(moduleName: string) {
   const projectName = split[split.length - 1];
   await mkdir(`${projectName}/auth`, { recursive: true });
   const authService = (
-    await readFile("templates/auth.service.txt", {
+    await readFile("go/gin/goqu/templates/auth.service.txt", {
       encoding: "utf8",
     })
   ).replace(/__moduleName__/g, moduleName);
   const authController = (
-    await readFile("templates/auth.controller.txt", {
+    await readFile("go/gin/goqu/templates/auth.controller.txt", {
       encoding: "utf8",
     })
   ).replace(/__moduleName__/g, moduleName);
@@ -254,5 +261,3 @@ async function _move(source: string, dest: string) {
     await move(source, dest, { overwrite: true });
   }
 }
-
-generate();
